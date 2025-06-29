@@ -1,0 +1,60 @@
+<!-- teacher.html - 教員用設定画面 -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TOEICクイズ 教員設定</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    label { display: block; margin-top: 10px; }
+    select, input[type="number"] { width: 100%; padding: 5px; margin-top: 5px; }
+    button { margin-top: 20px; padding: 10px 20px; }
+  </style>
+</head>
+<body>
+  <h1>教員設定画面</h1>
+  <label>CSVファイルを選択:
+    <input type="file" id="csvFile">
+  </label>
+  <label>出題順序:
+    <select id="order">
+      <option value="list">リスト順</option>
+      <option value="random">ランダム</option>
+    </select>
+  </label>
+  <label>制限時間（秒）:
+    <input type="number" id="timeLimit" value="60">
+  </label>
+  <button onclick="saveSettings()">設定を保存</button>
+
+  <p>この設定を反映したURLを学生に配布してください。</p>
+  <div id="shareUrl" style="margin-top: 20px; font-weight: bold;"></div>
+
+  <script>
+    function saveSettings() {
+      const fileInput = document.getElementById('csvFile');
+      const order = document.getElementById('order').value;
+      const time = parseInt(document.getElementById('timeLimit').value);
+
+      if (!fileInput.files[0]) {
+        alert('CSVファイルを選択してください。');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const settings = {
+          csv: e.target.result,
+          order,
+          timeLimit: time
+        };
+        localStorage.setItem('teacherSettings', JSON.stringify(settings));
+        document.getElementById('shareUrl').textContent = window.location.origin + '/index.html';
+        alert('設定を保存しました。index.html に反映されます。');
+      };
+      reader.readAsText(fileInput.files[0]);
+    }
+  </script>
+</body>
+</html>

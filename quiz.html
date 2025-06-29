@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>TOEIC 英単語クイズ</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+    button, input { padding: 8px 16px; margin: 8px; font-size: 16px; }
+    #quiz, #result, #downloadLog { display: none; }
+    #timer { font-size: 20px; color: red; margin: 10px; }
+  </style>
+</head>
+<body>
+
+  <h1>TOEIC 英単語クイズ</h1>
+
+  <div id="setup">
+    <p>学籍番号: <input type="text" id="studentId"></p>
+    <p>氏名: <input type="text" id="studentName"></p>
+    <p>制限時間（秒）: <input type="number" id="timeLimit" value="10" min="1"></p>
+    <p>単語リストCSVを選択: <input type="file" id="fileInput" accept=".csv"></p>
+    <button onclick="startQuiz()">クイズ開始</button>
+  </div>
+
+  <div id="quiz">
+    <p id="questionNumber"></p>
+    <div id="timer">残り時間: <span id="timeLeft">--</span> 秒</div>
+    <button onclick="playAudio()">音声を聞く</button>
+    <div id="choices"></div>
+  </div>
+
+  <div id="result">
+    <h2>クイズ終了！</h2>
+    <p id="score"></p>
+    <button id="downloadLog" onclick="downloadCSV()">ログをダウンロード</button>
+  </div>
+
+  <script>
+    let wordList = [];
+    let quizData = [];
+    let currentQuestion = 0;
+    let correctCount = 0;
+    let log = [];
+    let startTime, timerInterval, timerTimeout;
+    let timeLimitSeconds = 10;
+
+    function startQuiz() {
+      const id = document.getElementById('studentId').value.trim();
+      const name = document.getElementById('studentName').value.trim();
+      const file = document.getElementById('fileInput').files[0];
+      const timeLimit = parseInt(document.getElementById('timeLimit').value);
+
+      if (!id || !name || !file || isNaN(timeLimit) || timeLimit < 1) {
+        alert('すべての項目を正しく入力してください。');
+        return;
+      }
+
+      timeLimitSeconds = timeLimit;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const lines = e.target.result.trim().split('\n');
+        wordList = lines.map(line => {
+          const [english, japanese, audioUrl] = line.split(',');
+          return {
+            english: english.trim(),
+            japanese: japanese.trim(),
+            audio: (audioUrl || '').trim()
+          };
+        });
+
+        if (wordList.length < 12) {
+          alert('単語数が12個以上必要です。');
+          return;
+        }
+
+        quizData = shuffleArray([...wordList]).slice(0, 12);
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('quiz').style.display = 'block';
+        nextQuestion();
+      };
+      reader.readAsText(file);
+    }
+
+    function nextQuestion() {
+      clearTimeout(timerTimeout);
+      clearInterval(timerInterval);
+      if (currentQuestion >= quizData.length) {
+        endQuiz();
+        return;
+      }
+
+      const currentWord = quizData[currentQuestion];
+      document.getElementById('questionNumber').textContent = `問題 ${currentQuestion + 1} / 12`;
+      document.getElementById('timeLeft').textContent = timeLimitSeconds;
+
+      const choices = shuffleArray([
+        currentWord,
+        ...shuffleArray(wordList.filter(w => w !== currentWord)).slice(0, 3)
+      ]);
+
+      const choicesDiv = document.getElementById('choices');
+      choicesDiv.innerHTML = '';
+      choices.forEach(choice => {
+        const button = document.createElement('button');
+        button.textContent = choice.japanese;
+        button.onclick = () => checkAnswer(choice.japanese);
+        choicesDiv.appendChild(button);
+      });
+
+      startTime = new Date();
+      startTimer();
+    }
+
+    function startTimer() {
+      let remaining = timeLimitSeconds;
+      timerInterval = setInterval(() => {
+        remaining--;
+        document.getElementById('timeLeft').textContent = remaining;
+      }, 1000);
+
+      timerTimeout = setTimeout(() => {
+        clearInterval(timerInterval);
+        checkAnswer('時間切れ');
+      }, timeLimitSeconds * 1000);
+    }
+
+    function checkAnswer(selectedJapanese) {
+      clearTimeout(timerTimeout);
+      clearInterval(timerInterval);
+
+      const endTime = new Date();
+      const timeTaken = ((endTime - startTime) / 1000).toFixed(2);
+
+      const currentWord = quizData[currentQuestion];
+      const isCorrect = selectedJapanese === currentWord.japanese;
+
+      if (isCorrect) correctCount++;
+
+      log.push({
+        学籍番号: document.getElementById('studentId').value.trim(),
+        氏名: document.getElementById('studentName').value.trim(),
+        問題番号: currentQuestion + 1,
+        英単語: currentWord.english,
+        正しい日本語訳: currentWord.japanese,
+        選んだ日本語訳: selectedJapanese,
+        正誤: isCorrect ? '〇' : '×',
+        解答時間: timeTaken
+      });
+
+      currentQuestion++;
+      nextQuestion();
+    }
+
+    function endQuiz() {
+      document.getElementById('quiz').style.display = 'none';
+      document.getElementById('result').style.display = 'block';
+      document.getElementById('score').textContent = `スコア：${correctCount} / 12`;
+      document.getElementById('downloadLog').style.display = 'inline-block';
+    }
+
+    function downloadCSV() {
+      const header = Object.keys(log[0]).join(',');
+      const rows = log.map(row => Object.values(row).join(','));
+      const csvContent = [header, ...rows].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'quiz_log.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function playAudio() {
+      const currentWord = quizData[currentQuestion];
+      if (!currentWord.audio) {
+        alert("音声ファイルが指定されていません。");
+        return;
+      }
+
+      const audio = new Audio(currentWord.audio);
+      audio.play();
+    }
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!-- index.html - 学生用クイズ画面 -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TOEIC英単語クイズ</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    .question { font-weight: bold; margin-top: 20px; }
+    .options { margin-top: 10px; }
+    .options button { display: block; width: 100%; margin: 5px 0; padding: 10px; }
+    .result { margin-top: 20px; font-size: 1.2em; }
+  </style>
+</head>
+<body>
+  <h1>TOEIC英単語クイズ</h1>
+  <div>
+    <label>学籍番号: <input type="text" id="studentId"></label><br>
+    <label>氏名: <input type="text" id="studentName"></label><br>
+    <button onclick="startQuiz()">クイズ開始</button>
+  </div>
+  <div id="quiz" style="display:none;">
+    <div class="question" id="question"></div>
+    <audio id="audio" controls></audio>
+    <div class="options" id="options"></div>
+    <div id="timer"></div>
+  </div>
+  <div class="result" id="result"></div>
+
+  <script src="quiz.js"></script>
+</body>
+</html>

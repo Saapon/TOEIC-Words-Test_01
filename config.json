@@ -1,0 +1,24 @@
+{
+  "order": "random",
+  "timeLimit": 90,
+  "questions": [
+    {
+      "word": "ability",
+      "meaning": "能力",
+      "options": ["才能", "技術", "適性"],
+      "audioUrl": "audio/ability.mp3"
+    },
+    {
+      "word": "absence",
+      "meaning": "欠席",
+      "options": ["遅刻", "外出", "退室"],
+      "audioUrl": "audio/absence.mp3"
+    },
+    {
+      "word": "accommodation",
+      "meaning": "宿泊施設",
+      "options": ["旅程", "空港", "交通"],
+      "audioUrl": "audio/accommodation.mp3"
+    }
+  ]
+}
